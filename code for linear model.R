@@ -49,6 +49,7 @@ GLHT <-
       return(0) # accept
     }
     if (correction_methods == "RMT") {
+      # Compute all needed constant with limit replaced by empirical.
       y1 <- ncol(response_input) / length(block)
       y2 <-
         ncol(response_input) / (nrow(response_input) - ncol(independent_input))
@@ -62,9 +63,11 @@ GLHT <-
         log((cn * hn - dn * y2) / hn) / (y1 * y2)
       m <- log((cn ^ 2 - dn ^ 2) * hn ^ 2 / (cn * hn - y2 * dn) ^ 2) / 2
       v <- 2 * log(cn ^ 2 / (cn ^ 2 - dn ^ 2))
+      # Compute the CLRT statistics
       CLRT <- (-log(Lambda) - ncol(response_input) * F_f - m) * v ^ {
         -1 / 2
       }
+      # Generate threshold with respect to asymptotic distribution
       Upperthreshold <- qnorm(1 - alpha / 2)
       Lowerthreshold <- qnorm(alpha / 2)
       if (CLRT > Upperthreshold || CLRT < Lowerthreshold) {
@@ -72,13 +75,10 @@ GLHT <-
       }
       return(0) # accept
     }
-    # Result determination
-    
   }
 
 
-# Data Generation
-
+# Data Generation Function
 
 DataPreparation <- function(response_dimension ,
                             RSD ,
@@ -126,14 +126,14 @@ DataPreparation <- function(response_dimension ,
 
 # Testing
 
-# Initialize constants
+## Initialize constants
 p = 20
 RSD = 0.2
 input_dimension = 60
 block = 1:50
 testTimes = 100
 
-# Running LLR test for all three corrections for size
+## Running LLR test for all three corrections for size
 
 for (correction_methods in c("none", "BBC", "RMT")) {
   results_for_one_method <- c() # Initialize array for results
