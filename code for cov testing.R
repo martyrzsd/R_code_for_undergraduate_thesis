@@ -63,6 +63,7 @@ BenchMarkCov <-
         AlterCLRresults[length(CLRresults) + 1] <- CLR(Test_data, 0.05) / testTimes
       }
     }
+    # Test runing
     LRresults <- matrix(LRresults, ncol = testTimes, byrow = TRUE)
     CLRresults <- matrix(CLRresults, ncol = testTimes, byrow = TRUE)
     AlterLRresults <- matrix(LRresults, ncol = testTimes, byrow = TRUE)
@@ -79,6 +80,8 @@ BenchMarkCov <-
     )
   }
 
+
+
 # Benchmark and visualization
 
 Finalresults <- BenchMarkCov(testTimes = 100)
@@ -87,6 +90,7 @@ Finalresults <- BenchMarkCov(testTimes = 100)
 plot(x=c(2, 10, 50, 100, 200, 500),y=Finalresults$`LR Dimension Effects`,"o", xlab = "Dimension",ylab= "Power",pch=2)
 lines(x=c(2, 10, 50, 100, 200, 500),y=Finalresults$`CLR Dimension Effects`,"o")
 legend("topleft",legend=c("LR","CLR"),pch = c(2,1))
+
 
 
 
