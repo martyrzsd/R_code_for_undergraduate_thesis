@@ -1,8 +1,4 @@
-# Packages included
-
-library(MASS)
-
-# Likelihood Ratio Testing
+# General Linear Hypothesis Testing Function
 
 GLHT <-
   function(independent_input,
@@ -11,6 +7,7 @@ GLHT <-
            block = 1,
            B1,
            correction_methods = "none") {
+    library(MASS)
     # MLE computation of the whole model
     B_estimate <-
       t(crossprod(independent_input, response_input)) %*% solve(crossprod(independent_input, independent_input))
@@ -78,83 +75,3 @@ GLHT <-
   }
 
 
-# Data Generation Function
-
-DataPreparation <- function(response_dimension ,
-                            RSD ,
-                            input_dimension) {
-  # p: dimension of response
-  # q: dimension of input
-  # n: sample size
-  # We are exporting all data directly inside the global environment
-  # compute the rounded sample size
-  n <- ceiling(response_dimension / RSD)
-  # Def of the real B
-  B <<-
-    mvrnorm(response_dimension,
-            rep(0, times = input_dimension),
-            diag(1, nrow = input_dimension))
-  
-  # Data Generation
-  ## Design generation
-  independent_data <<-
-    mvrnorm(n,
-            rep(1, times = input_dimension),
-            diag(x = rep(0.5, times = input_dimension),
-                 nrow = input_dimension))
-  ## Generation of covariance matrix for noise
-  Sigma <- diag(x = 1, nrow = response_dimension)
-  rho <- 0.9
-  ### Lower diagonal
-  for (i in 1:((ncol(Sigma)) - 2)) {
-    diag(Sigma[-1:-i, (-ncol(Sigma) + i - 1):-ncol(Sigma)]) <-
-      rep(0.9 ^ (i), times = ncol(Sigma) - i)
-  }
-  ### Corner element
-  Sigma[ncol(Sigma), 1] <- rho ^ (ncol(Sigma))
-  ### Upper diagonal
-  Sigma <-
-    Sigma + t(Sigma) - diag(diag(Sigma))
-  ## Generate Gaussian noise with respect to the covariance matrix
-  noise <-
-    mvrnorm(n, rep(1, times = response_dimension), Sigma)
-  # Generate response with respect to the real model
-  response_data <<-
-    t(B %*% t(independent_data)) + noise # with rows being samples
-  # return()
-}
-
-# Testing
-
-## Initialize constants
-p = 20
-RSD = 0.2
-input_dimension = 60
-block = 1:50
-testTimes = 100
-
-## Running LLR test for all three corrections for size
-
-for (correction_methods in c("none", "BBC", "RMT")) {
-  results_for_one_method <- c() # Initialize array for results
-  for (k in 1:testTimes) {
-    # Data preparation
-    DataPreparation(p, RSD, input_dimension)
-    # For convenience, we choose the following null
-    B1 <- B[, block]
-    results_for_one_method[length(results_for_one_method) + 1] <-
-      GLHT(
-        independent_data,
-        response_data ,
-        alpha = 0.05,
-        block = block,
-        B1 = B1,
-        correction_methods
-      ) / testTimes
-  }
-  assign(correction_methods, results_for_one_method)
-}
-
-sum(BBC)
-sum(none)
-sum(RMT)
