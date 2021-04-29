@@ -4,78 +4,94 @@ library(MASS)
 
 # Likelihood Ratio Testing
 
-LLR <-
-  function(design_input,
+GLHT <-
+  function(independent_input,
            response_input,
            alpha = 0.05,
            block = 1,
            B1,
-           BBC = TRUE) {
+           correction_methods = "none") {
     # MLE computation of the whole model
     B_estimate <-
-      t(crossprod(design_input, response_input)) %*% solve(crossprod(design_input, design_input))
+      t(crossprod(independent_input, response_input)) %*% solve(crossprod(independent_input, independent_input))
     Sigma_estimate <-
-      cov(response_input - t(B_estimate %*% t(design_input)))
+      cov(response_input - t(B_estimate %*% t(independent_input)))
     # MLE computation of the residue
-    y <- response_input - t(B1 %*% t(design_input[, block]))
+    y <- response_input - t(B1 %*% t(independent_input[, block]))
     B2_estimate <-
-      crossprod(y, design_input[, -block]) %*% solve(crossprod(design_input[, -block], design_input[, -block]))
+      crossprod(y, independent_input[, -block]) %*% solve(crossprod(independent_input[, -block], independent_input[, -block]))
     Sigma1_estimate <-
-      cov(y - t(B2_estimate %*% t(design_input[, -block])))
+      cov(y - t(B2_estimate %*% t(independent_input[, -block])))
     # log-likelihood ratio statistics
     Lambda <- det(Sigma_estimate) / det(Sigma1_estimate)
-    if (BBC) {    # BBC correction enable
+    # Different Correction
+    if (correction_methods == "BBC") {    # BBC correction enable
       k <-
-        nrow(design_input) - ncol(design_input) - (ncol(response_input) - length(block) +
+        nrow(independent_input) - ncol(independent_input) - (ncol(response_input) - length(block) +
                                                      1) / 2
       U <- -k * log(Lambda)
-    } else{ # BBC correction disable
-      U <- -nrow(input_design) * log(Lambda)
+      threshold <-
+        qchisq(1 - alpha, df = ncol(response_input) * length(block))
+      if (U > threshold) {
+        return(1) # reject
+      }
+      return(0) # accept
+    } 
+    if (correction_methods == "none") { # No Correction
+      U <- -nrow(independent_input) * log(Lambda)
+      threshold <-
+        qchisq(1 - alpha, df = ncol(response_input) * length(block))
+      if (U > threshold) {
+        return(1) # reject
+      }
+      return(0) # accept
     }
-    # Large sample threshold computation
-    threshold <-
-      qchisq(1 - alpha, df = ncol(response_input) * length(block))
+    if (correction_methods == "RMT"){
+      y1 <- ncol(response_input)/length(block)
+      y2 <- ncol(response_input)/(nrow(response_input)-ncol(independent_input))
+      hn <- sqrt(y1+y2-y1*y2)
+      an <- (1-hn)^2/(1-y2)^2
+      bn <- (1+hn)^2/(1-y2)^2
+      dn <- (sqrt(1+y2*bn/y1) - sqrt(1+y2*an/y1))/2
+      cn <- (sqrt(1+y2*bn/y1) + sqrt(1+y2*an/y1))/2
+      F_f <- (y2-1)/y2 * log(cn) + (y1-1)/y1*log(cn-dn*hn)+(y1+y2)*log((cn*hn-dn*y2)/hn)/(y1*y2)
+      m <- log((cn^2-dn^2)*hn^2/(cn*hn-y2*dn)^2)/2
+      v <- 2*log(cn^2/(cn^2-dn^2))
+      CLRT <- (-log(Lambda) - ncol(response_input)*F_f -m)*v^{-1/2}
+      Upperthreshold <- qnorm(1-alpha/2)
+      Lowerthreshold <- qnorm(alpha/2)
+      if (CLRT > Upperthreshold||CLRT<Lowerthreshold) {
+        return(1) # reject
+      }
+      return(0) # accept
+    }
     # Result determination
-    if (U > threshold) {
-      return(1) # reject
-    }
-    return(0) # accept
+
   }
 
 
-
-CLLR <- function(design_input,
-                 response_input,
-                 alpha = 0.05,
-                 block = 1,
-                 B1,) {
-  return()
-}
+# Data Generation
 
 
-
-DataPreparation <- function(testTimes = 100,
-                            dimensionVector = 10,
-                            RSD = 0.05,
-                            input_dimension = 50,
-                            block = 1:30) {
+DataPreparation <- function(
+                            response_dimension ,
+                            RSD ,
+                            input_dimension ) {
   # p: dimension of response
   # q: dimension of input
-  # k: number of experiments
   # n: sample size
-  
+  # We are exporting all data directly inside the global environment
   # compute the rounded sample size
-  n <- ceiling(p / RSD) 
-  for (k in 1:testTimes) {
-    # Def of the real B and the null B1
-    B <-
-      mvrnorm(p,
+  n <- ceiling(response_dimension / RSD) 
+    # Def of the real B
+    B <<-
+      mvrnorm(response_dimension,
               rep(0, times = input_dimension),
               diag(1, nrow = input_dimension))
-    B1 <- B[, block]
+
     # Data Generation
     ## Design generation
-    independent_data <-
+    independent_data <<-
       mvrnorm(n,
               rep(1, times = input_dimension),
               diag(
@@ -83,7 +99,7 @@ DataPreparation <- function(testTimes = 100,
                 nrow = input_dimension
               ))
     ## Generation of covariance matrix for noise
-    Sigma <- diag(x = 1, nrow = p)
+    Sigma <- diag(x = 1, nrow = response_dimension)
     rho <- 0.9
     ### Lower diagonal
     for (i in 1:((ncol(Sigma)) - 2)) {
@@ -97,31 +113,44 @@ DataPreparation <- function(testTimes = 100,
       Sigma + t(Sigma) - diag(diag(Sigma)) 
     ## Generate Gaussian noise with respect to the covariance matrix
     noise <-
-      mvrnorm(n, rep(1, times = p), Sigma) 
+      mvrnorm(n, rep(1, times = response_dimension), Sigma) 
     # Generate response with respect to the real model
-    response_data <-
+    response_data <<-
       t(B %*% t(independent_data)) + noise # with rows being samples
-  }
-  # LLRresults <- matrix(LLRresults, ncol = testTimes, byrow = TRUE)
-  return(list("Real Design"=B,"Null Design" = B1, "Independent data" = independent_data, "Response data" = response_data))
+  # return()
 }
 
-# Initialize array for results
-LLRresults <- c()
-CLRresults <- c()
+# Testing
 
-DataPreparation(testTimes = 100)
+# Initialize constants
+p = 20
+RSD = 0.2
+input_dimension = 60
+block = 1:50
+testTimes = 100
 
-# Running LLR test with BBC
-LLRresults[length(LLRresults) + 1] <-
-  LLR(
-    Test_design,
-    Test_response,
-    alpha = 0.05,
-    block = block,
-    B1 = B[,block],
-    TRUE
-  ) / testTimes
-# CLRresults[length(CLRresults) + 1] <-
-# CLLR(Test_design, Test_response, 0.05) / testTimes
+# Running LLR test for all three corrections for size
 
+for (correction_methods in c("none","BBC","RMT")) {
+  results_for_one_method <- c() # Initialize array for results
+  for (k in 1:testTimes) {
+    # Data preparation
+    DataPreparation(p,RSD,input_dimension)
+    # For convenience, we choose the following null
+    B1 <- B[, block]
+    results_for_one_method[length(results_for_one_method) + 1] <-
+      GLHT(
+        independent_data,
+        response_data ,
+        alpha = 0.05,
+        block = block,
+        B1 = B1,
+        correction_methods
+      ) / testTimes
+  }
+  assign(correction_methods, results_for_one_method)
+}
+
+sum(BBC)
+sum(none)
+sum(RMT)
