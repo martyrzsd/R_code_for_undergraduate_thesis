@@ -1,19 +1,15 @@
 # Data Generation Function
 
-DataPreparation <- function(response_dimension ,
-                            RSD ,
-                            input_dimension) {
+DataPreparation <- function(B ,
+                             RSD, rho = 0.9) {
   # p: dimension of response
   # q: dimension of input
   # n: sample size
   # We are exporting all data directly inside the global environment
   # compute the rounded sample size
+  response_dimension <- nrow(B)
+  input_dimension <- ncol(B)
   n <- ceiling(response_dimension / RSD)
-  # Def of the real B
-  B <<-
-    mvrnorm(response_dimension,
-            rep(0, times = input_dimension),
-            diag(1, nrow = input_dimension))
   
   # Data Generation
   ## Design generation
@@ -24,11 +20,10 @@ DataPreparation <- function(response_dimension ,
                  nrow = input_dimension))
   ## Generation of covariance matrix for noise
   Sigma <- diag(x = 1, nrow = response_dimension)
-  rho <- 0.9
   ### Lower diagonal
   for (i in 1:((ncol(Sigma)) - 2)) {
     diag(Sigma[-1:-i, (-ncol(Sigma) + i - 1):-ncol(Sigma)]) <-
-      rep(0.9 ^ (i), times = ncol(Sigma) - i)
+      rep(rho ^ (i), times = ncol(Sigma) - i)
   }
   ### Corner element
   Sigma[ncol(Sigma), 1] <- rho ^ (ncol(Sigma))

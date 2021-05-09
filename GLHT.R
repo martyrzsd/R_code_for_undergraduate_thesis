@@ -61,9 +61,7 @@ GLHT <-
       m <- log((cn ^ 2 - dn ^ 2) * hn ^ 2 / (cn * hn - y2 * dn) ^ 2) / 2
       v <- 2 * log(cn ^ 2 / (cn ^ 2 - dn ^ 2))
       # Compute the CLRT statistics
-      CLRT <- (-log(Lambda) - ncol(response_input) * F_f - m) * v ^ {
-        -1 / 2
-      }
+      CLRT <- (-log(Lambda) - ncol(response_input) * F_f - m) * v ^ (-1 / 2)
       # Generate threshold with respect to asymptotic distribution
       Upperthreshold <- qnorm(1 - alpha / 2)
       Lowerthreshold <- qnorm(alpha / 2)
