@@ -7,6 +7,7 @@ DataPreparation <- function(B ,
   # n: sample size
   # We are exporting all data directly inside the global environment
   # compute the rounded sample size
+  library(MASS)
   response_dimension <- nrow(B)
   input_dimension <- ncol(B)
   n <- ceiling(response_dimension / RSD)

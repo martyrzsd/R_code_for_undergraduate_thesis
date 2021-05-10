@@ -6,9 +6,10 @@ source("data_generation.R")
 
 # non sparse
 {
-  # rho = 0
+  # rho = 0, sample size grow
   final_plot_rho0 <- c()
   {
+    testTimes = 2000
     # first group
     {
       ## Initialize constants
@@ -16,7 +17,6 @@ source("data_generation.R")
       RSD = 0.05
       input_dimension = 50
       block = 1:20
-      testTimes = 100
       
       library(MASS)
       B <- mvrnorm(p,
@@ -55,7 +55,6 @@ source("data_generation.R")
       RSD = 0.05
       input_dimension = 100
       block = 1:50
-      testTimes = 100
       
       library(MASS)
       B <- mvrnorm(p,
@@ -94,7 +93,6 @@ source("data_generation.R")
       RSD = 0.05
       input_dimension = 200
       block = 1:100
-      testTimes = 100
       
       library(MASS)
       B <- mvrnorm(p,
@@ -133,7 +131,6 @@ source("data_generation.R")
       RSD = 0.05
       input_dimension = 500
       block = 1:200
-      testTimes = 100
       
       library(MASS)
       B <- mvrnorm(p,
@@ -172,6 +169,7 @@ source("data_generation.R")
     colnames(final_plot_rho0) <- c("None", "BBC", "RMT")
     
     {
+      png("COV dimension-sample both rho 0.png", width = 1000, height = 618)
       plot(
         x = c(1, 2, 3, 4),
         y = final_plot_rho0[, 1],
@@ -217,6 +215,7 @@ source("data_generation.R")
         # text.font = 4,
         bty = "n"
       )
+      dev.off()
     }
   }
   
@@ -229,8 +228,6 @@ source("data_generation.R")
       RSD = 0.05
       input_dimension = 50
       block = 1:20
-      testTimes = 100
-      
       library(MASS)
       B <- mvrnorm(p,
                    rep(0, times = input_dimension),
@@ -266,7 +263,6 @@ source("data_generation.R")
       RSD = 0.05
       input_dimension = 100
       block = 1:50
-      testTimes = 100
       library(MASS)
       B <- mvrnorm(p,
                    rep(0, times = input_dimension),
@@ -301,7 +297,6 @@ source("data_generation.R")
       RSD = 0.05
       input_dimension = 200
       block = 1:100
-      testTimes = 100
       library(MASS)
       B <- mvrnorm(p,
                    rep(0, times = input_dimension),
@@ -336,7 +331,6 @@ source("data_generation.R")
       RSD = 0.05
       input_dimension = 500
       block = 1:200
-      testTimes = 100
       library(MASS)
       B <- mvrnorm(p,
                    rep(0, times = input_dimension),
@@ -370,6 +364,7 @@ source("data_generation.R")
       final_plot_rho09 <-
         as.data.frame(matrix(final_plot_rho09, nrow = 4, byrow = TRUE))
       colnames(final_plot_rho09) <- c("None", "BBC", "RMT")
+      png("COV dimension-sample both rho 09.png", width = 1000, height = 618)
       {
         plot(
           x = c(1, 2, 3, 4),
@@ -417,10 +412,104 @@ source("data_generation.R")
           text.font = 4,
           bty = "n"
         )
+        dev.off()
       }
     }
   }
 }
+
+
+# only dimension growth
+
+samplesize <- 1000
+testTimes <- 2000
+parameter <- list(c(10,50),c(30,100),c(50,200),c(100,500))
+blockList <- list(1:20,1:50,1:100,1:200)
+dimensionEffects <- c()
+
+for (i in 1:4) {
+  for (correction_methods in c("none", "BBC", "RMT")) {
+    results_for_one_method <- c() # Initialize array for results
+    for (k in 1:testTimes) {
+      # Data preparation
+      RSD <- unlist(parameter[i])[1]/(samplesize)
+      DataPreparation(B, RSD, rho = 0)
+      # For convenience, we choose the following null
+      block <- unlist(blockList[i])
+      B1 <- B[, block]
+      # Run the function
+      results_for_one_method[length(results_for_one_method) + 1] <-
+        GLHT(
+          independent_data,
+          response_data ,
+          alpha = 0.05,
+          block = block,
+          B1 = B1,
+          correction_methods
+        ) / testTimes
+    }
+    # Name the out put by the correction methods used
+    assign(correction_methods, results_for_one_method)
+    dimensionEffects[length(dimensionEffects) + 1] <-
+      sum(get(correction_methods))
+  }
+  # graphical processing
+  dimensionEffects <-
+    as.data.frame(matrix(dimensionEffects, ncol = 3, byrow = TRUE))
+  colnames(dimensionEffects) <- c("None", "BBC", "RMT")
+  
+  {
+    png("COV dimension rho 0.png", width = 1000, height = 618)
+    plot(
+      x = c(1, 2, 3, 4),
+      y = dimensionEffects[, 1],
+      "o",
+      pch = 1,
+      ylim = c(0, 1),
+      col = "red",
+      xlab = "dimension settings, p,q,q_1, rho = 0",
+      ylab = "Size",
+      xaxt = "n"
+    )
+    axis(
+      1,
+      at = 1:4,
+      labels = c(
+        "(10,50,20)",
+        "(30,100,50)",
+        "(50,200,100)",
+        "(100,500,200)"
+      )
+    )
+    lines(
+      x = c(1, 2, 3, 4),
+      y = dimensionEffects[, 2],
+      "o",
+      pch = 2,
+      col = "blue"
+    )
+    lines(
+      x = c(1, 2, 3, 4),
+      y = dimensionEffects[, 3],
+      "o",
+      pch = 4,
+      col = "green"
+    )
+    legend(
+      "left",
+      legend = c("None", "BBC", "RMT"),
+      col = c("red", "blue", "green"),
+      lty = 1,
+      pch = c(1, 2, 4),
+      title = "Methods",
+      # text.font = 4,
+      bty = "n"
+    )
+    dev.off()
+  }
+}
+
+
 
 # Sparse
 {
