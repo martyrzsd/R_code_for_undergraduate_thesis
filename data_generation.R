@@ -33,7 +33,7 @@ DataPreparation <- function(B ,
     Sigma + t(Sigma) - diag(diag(Sigma))
   ## Generate Gaussian noise with respect to the covariance matrix
   noise <-
-    mvrnorm(n, rep(1, times = response_dimension), Sigma)
+    mvrnorm(n, rep(0, times = response_dimension), Sigma)
   # Generate response with respect to the real model
   response_data <<-
     t(B %*% t(independent_data)) + noise # with rows being samples

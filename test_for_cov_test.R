@@ -24,10 +24,10 @@ BenchMarkCov <-
       
       # Run Test
       for (k in 1:testTimes) {
-        # k: number of experiments
+        # generating data for null and alter
         Sigma <- diag(x = 1, nrow = p)
         Test_data <-
-          mvrnorm(n, rep(0, times = p), Sigma) # Generating data
+          mvrnorm(n, rep(0, times = p), Sigma) 
         LRresults[length(LRresults) + 1] <-
           one_sample_cov_test(Test_data, 0.05, "none") / testTimes
         CLRresults[length(CLRresults) + 1] <-
@@ -40,24 +40,26 @@ BenchMarkCov <-
           one_sample_cov_test(Test_data, 0.05, "none") / testTimes
         AlterCLRresults[length(CLRresults) + 1] <-
           one_sample_cov_test(Test_data, 0.05, "RMT") / testTimes
-        
-        SigmaPara <- diag(x = 1, nrow = p)
+        print(k)
+        print(p)
+        #SigmaPara <- diag(x = 1, nrow = p)
         ### Lower diagonal
-        for (i in 1:((ncol(SigmaPara)) - 2)) {
-          diag(SigmaPara[-1:-i, (-ncol(SigmaPara) + i - 1):-ncol(SigmaPara)]) <-
-            rep(rho ^ (i), times = ncol(SigmaPara) - i)
-        }
+        #for (i in 1:((ncol(SigmaPara)) - 2)) {
+        #  diag(SigmaPara[-1:-i, (-ncol(SigmaPara) + i - 1):-ncol(SigmaPara)]) <-
+        #    rep(rho ^ (i), times = ncol(SigmaPara) - i)
+        #}
         ### Corner element
-        SigmaPara[ncol(SigmaPara), 1] <- rho ^ (ncol(SigmaPara))
+        #SigmaPara[ncol(SigmaPara), 1] <- rho ^ (ncol(SigmaPara))
         ### Upper diagonal
-        SigmaPara <-
-          SigmaPara + t(SigmaPara) - diag(diag(SigmaPara))
-        Test_data_Para <-
-          mvrnorm(n, rep(0, times = p), SigmaPara) # Generating data
-        LRresultsPara[length(LRresultsPara) + 1] <-
-          one_sample_cov_test(Test_data_Para, 0.05, "none") / testTimes
-        CLRresultsPara[length(CLRresultsPara) + 1] <-
-          one_sample_cov_test(Test_data_Para, 0.05, "RMT") / testTimes
+        #SigmaPara <-
+        #  SigmaPara + t(SigmaPara) - diag(diag(SigmaPara))
+        
+        #Test_data_Para <-
+        #  mvrnorm(n, rep(0, times = p), SigmaPara) # Generating data
+        #LRresultsPara[length(LRresultsPara) + 1] <-
+        #  one_sample_cov_test(Test_data_Para, 0.05, "none") / testTimes
+        #CLRresultsPara[length(CLRresultsPara) + 1] <-
+        #  one_sample_cov_test(Test_data_Para, 0.05, "RMT") / testTimes
       }
     }
     LRresultsPara <- matrix(LRresults, ncol = testTimes, byrow = TRUE)
@@ -82,24 +84,40 @@ BenchMarkCov <-
 
 # Benchmark and visualization
 
-Finalresults <- BenchMarkCov(testTimes = 100)
+SampleSize <- 1000
+DimensionArray <- c(2, 10, 50, 100, 200, 500)
+RsdArray <- DimensionArray/SampleSize
+tt <- 10
 
+for (i in 1:length(DimensionArray)) {
+  ResultsDimensionEffects <- BenchMarkCov(testTimes = tt, RSD = RsdArray[i], dimensionVector = DimensionArray[i])
+}
+  
+## dimension and sample size both growth ----
+tt <- 10
+ResultsBothGrowth <- BenchMarkCov(testTimes = tt)
 
+write.csv(ResultsBothGrowth,file = "Covariance testing both growth.csv")
+png(filename = "Covariance testing both growth.png",width = 1000,
+    height = 618)
 plot(
-  x = c(2, 10, 50, 100, 200, 500),
-  y = Finalresults$`LR Dimension Effects`,
+  x = DimensionArray,
+  y = ResultsBothGrowth$`LR Dimension Effects`,
   "o",
   xlab = "Dimension",
   ylab = "Power",
-  pch = 2
+  pch = 2,
+  col = "red"
 )
-lines(x = c(2, 10, 50, 100, 200, 500),
-      y = Finalresults$`CLR Dimension Effects`,
-      "o")
-legend("topleft",
+lines(x = DimensionArray,
+      y = ResultsBothGrowth$`CLR Dimension Effects`,
+      "o",
+      col = "blue")
+legend("left",
        legend = c("LR", "CLR"),
-       pch = c(2, 1))
+       pch = c(2, 1),
+       col = c("red", "blue"))
 }
-
+dev.off()
 
 FinalresultsPara <- BenchMarkCov(testTimes = 2000, Sigma = )
