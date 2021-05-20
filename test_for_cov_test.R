@@ -4,7 +4,7 @@ source("one_sample_covariance_testing.R")
 {
 BenchMarkCov <-
   function(testTimes = 100,
-           dimensionVector = c(2, 10, 50, 100, 200, 500),
+           dimensionVector = c(2, 10, 50, 100, 200),
            RSD = 0.05, Sigma=diag(x = 1, nrow = dimensionVector[1])) {
     library(MASS)
     # one can change test times and dimension of each experiments using the parameters above
@@ -62,18 +62,18 @@ BenchMarkCov <-
         #  one_sample_cov_test(Test_data_Para, 0.05, "RMT") / testTimes
       }
     }
-    LRresultsPara <- matrix(LRresults, ncol = testTimes, byrow = TRUE)
-    CLRresultsPara <- matrix(CLRresults, ncol = testTimes, byrow = TRUE)
+    LRresults <- matrix(LRresults, ncol = testTimes, byrow = TRUE)
+    CLRresults <- matrix(CLRresults, ncol = testTimes, byrow = TRUE)
     AlterLRresults <-
       matrix(LRresults, ncol = testTimes, byrow = TRUE)
     AlterCLRresults <-
       matrix(CLRresults, ncol = testTimes, byrow = TRUE)
     return(
       list(
-        "LR Dimension Effects" = apply(LRresults, 1, sum),
+        "LR both growth" = apply(LRresults, 1, sum),
         "LR power" = 1 - apply(AlterLRresults, 1, sum),
         "LR Raw Results" = LRresults,
-        "CLR Dimension Effects" = apply(CLRresults, 1, sum),
+        "CLR both growth" = apply(CLRresults, 1, sum),
         "CLR power" = 1 - apply(AlterCLRresults, 1, sum),
         "CLR Raw Results" = CLRresults
       )
@@ -85,7 +85,7 @@ BenchMarkCov <-
 # Benchmark and visualization
 
 SampleSize <- 1000
-DimensionArray <- c(2, 10, 50, 100, 200, 500)
+DimensionArray <- c(2, seq(10,100,10),seq(120,200,20))
 RsdArray <- DimensionArray/SampleSize
 tt <- 10
 
@@ -94,30 +94,32 @@ for (i in 1:length(DimensionArray)) {
 }
   
 ## dimension and sample size both growth ----
-tt <- 10
-ResultsBothGrowth <- BenchMarkCov(testTimes = tt)
+tt <- 5
+ResultsBothGrowth <- BenchMarkCov(testTimes = tt, dimensionVector = DimensionArray)
 
 write.csv(ResultsBothGrowth,file = "Covariance testing both growth.csv")
 png(filename = "Covariance testing both growth.png",width = 1000,
     height = 618)
 plot(
   x = DimensionArray,
-  y = ResultsBothGrowth$`LR Dimension Effects`,
+  y = ResultsBothGrowth$`LR both growth`,
   "o",
-  xlab = "Dimension",
-  ylab = "Power",
+  xlab = "dimension and sample size (p,n)",
+  ylab = "size",
   pch = 2,
-  col = "red"
+  col = "red",
+  ylim = c(0,1)
 )
 lines(x = DimensionArray,
-      y = ResultsBothGrowth$`CLR Dimension Effects`,
+      y = ResultsBothGrowth$`CLR both growth`,
       "o",
       col = "blue")
 legend("left",
        legend = c("LR", "CLR"),
        pch = c(2, 1),
-       col = c("red", "blue"))
-}
+       col = c("red", "blue"),
+       bty = "n")
 dev.off()
+}
 
 FinalresultsPara <- BenchMarkCov(testTimes = 2000, Sigma = )
