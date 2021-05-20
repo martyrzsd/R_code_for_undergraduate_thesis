@@ -1453,3 +1453,365 @@ source("data_generation.R")
   )
   dev.off()
 }
+
+## sparse power test----
+{
+  testTimes <- 100
+  ### first group (done) ----
+  {
+    p = 10
+    RSD = 0.05
+    input_dimension = 50
+    block = 1:30
+    clist <- seq(0.01, 0.1, 0.01)
+    library(MASS)
+    B <- mvrnorm(p,
+                 rep(1, times = input_dimension),
+                 diag(1, nrow = input_dimension))
+    powerPlot <- c()
+    sparseB <-
+      matrix(rbinom(p * input_dimension, 2, 0.1), nrow = p)
+    B <- sparseB * B
+    # Running LLR test for all three corrections for size
+    for (c in clist) {
+      for (correction_methods in c("none", "BBC", "RMT")) {
+        results_for_one_method <- c() # Initialize array for results
+        for (k in 1:testTimes) {
+          # Data preparation
+          DataPreparation(c * B, RSD, rho = 0)
+          # For convenience, we choose the following null
+          B1 <-
+            matrix(rep(0, length(block) * nrow(B)), ncol = length(block))
+          # Run the function
+          results_for_one_method[length(results_for_one_method) + 1] <-
+            GLHT(
+              independent_data,
+              response_data ,
+              alpha = 0.05,
+              block = block,
+              B1 = B1,
+              correction_methods
+            ) / testTimes
+          print(c)
+          print(correction_methods)
+          print(k)
+        }
+        # Name the out put by the correction methods used
+        assign(correction_methods, results_for_one_method)
+        powerPlot[length(powerPlot) + 1] <-
+          sum(get(correction_methods))
+      }
+    }
+    powerPlot <-
+      as.data.frame(matrix(powerPlot, ncol = 3, byrow = TRUE))
+    colnames(powerPlot) <- c("None", "BBC", "RMT")
+    write.csv(powerPlot, file = "sparse power rho 0 group1.csv")
+    png("sparse power rho 0 group1.png",
+        width = 1000,
+        height = 618)
+    plot(
+      x = clist,
+      y = unlist(powerPlot$None),
+      "o",
+      pch = 1,
+      ylim = c(0, 1),
+      col = "red",
+      xlab = "value of non-center parameter c, rho = 0",
+      ylab = "Power"
+    )
+    lines(
+      x = clist,
+      y = unlist(powerPlot[, 2]),
+      "o",
+      pch = 2,
+      col = "blue"
+    )
+    lines(
+      x = clist,
+      y = unlist(powerPlot[, 3]),
+      "o",
+      pch = 4,
+      col = "green"
+    )
+    legend(
+      "left",
+      legend = c("None", "BBC", "RMT"),
+      col = c("red", "blue", "green"),
+      lty = 1,
+      pch = c(1, 2, 4),
+      title = "Methods",
+      # text.font = 4,
+      bty = "n"
+    )
+    dev.off()
+  }
+  ### second group ----
+  {
+    p = 30
+    RSD = 0.05
+    input_dimension = 100
+    block = 1:50
+    clist <- seq(0.002, 0.04, 0.002)
+    library(MASS)
+    B <- mvrnorm(p,
+                 rep(1, times = input_dimension),
+                 diag(1, nrow = input_dimension))
+    powerPlot <- c()
+    sparseB <-
+      matrix(rbinom(p * input_dimension, 2, 0.1), nrow = p)
+    B <- sparseB * B
+    # Running LLR test for all three corrections for size
+    for (c in clist) {
+      for (correction_methods in c("none", "BBC", "RMT")) {
+        results_for_one_method <- c() # Initialize array for results
+        for (k in 1:testTimes) {
+          # Data preparation
+          DataPreparation(c * B, RSD, rho = 0)
+          # For convenience, we choose the following null
+          B1 <-
+            matrix(rep(0, length(block) * nrow(B)), ncol = length(block))
+          # Run the function
+          results_for_one_method[length(results_for_one_method) + 1] <-
+            GLHT(
+              independent_data,
+              response_data ,
+              alpha = 0.05,
+              block = block,
+              B1 = B1,
+              correction_methods
+            ) / testTimes
+          print(c)
+          print(correction_methods)
+          print(k)
+        }
+        # Name the out put by the correction methods used
+        assign(correction_methods, results_for_one_method)
+        powerPlot[length(powerPlot) + 1] <-
+          sum(get(correction_methods))
+      }
+    }
+    powerPlot <-
+      as.data.frame(matrix(powerPlot, ncol = 3, byrow = TRUE))
+    colnames(powerPlot) <- c("None", "BBC", "RMT")
+    write.csv(powerPlot, file = "sparse power rho 0 group2.csv")
+    png("sparse power rho 0 group2.png",
+        width = 1000,
+        height = 618)
+    plot(
+      x = clist,
+      y = unlist(powerPlot$None),
+      "o",
+      pch = 1,
+      ylim = c(0, 1),
+      col = "red",
+      xlab = "value of non-center parameter c, rho = 0",
+      ylab = "Power"
+    )
+    lines(
+      x = clist,
+      y = unlist(powerPlot[, 2]),
+      "o",
+      pch = 2,
+      col = "blue"
+    )
+    lines(
+      x = clist,
+      y = unlist(powerPlot[, 3]),
+      "o",
+      pch = 4,
+      col = "green"
+    )
+    legend(
+      "left",
+      legend = c("None", "BBC", "RMT"),
+      col = c("red", "blue", "green"),
+      lty = 1,
+      pch = c(1, 2, 4),
+      title = "Methods",
+      # text.font = 4,
+      bty = "n"
+    )
+    dev.off()
+  }
+  ### third group ----
+  {
+    p = 50
+    RSD = 0.1
+    input_dimension = 200
+    block = 1:100
+    clist <- seq(0.001, 0.02, 0.001)
+    library(MASS)
+    B <- mvrnorm(p,
+                 rep(1, times = input_dimension),
+                 diag(1, nrow = input_dimension))
+    powerPlot <- c()
+    sparseB <-
+      matrix(rbinom(p * input_dimension, 2, 0.1), nrow = p)
+    B <- sparseB * B
+    # Running LLR test for all three corrections for size
+    for (c in clist) {
+      for (correction_methods in c("none", "BBC", "RMT")) {
+        results_for_one_method <- c() # Initialize array for results
+        for (k in 1:testTimes) {
+          # Data preparation
+          DataPreparation(c * B, RSD, rho = 0)
+          # For convenience, we choose the following null
+          B1 <-
+            matrix(rep(0, length(block) * nrow(B)), ncol = length(block))
+          # Run the function
+          results_for_one_method[length(results_for_one_method) + 1] <-
+            GLHT(
+              independent_data,
+              response_data ,
+              alpha = 0.05,
+              block = block,
+              B1 = B1,
+              correction_methods
+            ) / testTimes
+          print(c)
+          print(correction_methods)
+          print(k)
+        }
+        # Name the out put by the correction methods used
+        assign(correction_methods, results_for_one_method)
+        powerPlot[length(powerPlot) + 1] <-
+          sum(get(correction_methods))
+      }
+    }
+    powerPlot <-
+      as.data.frame(matrix(powerPlot, ncol = 3, byrow = TRUE))
+    colnames(powerPlot) <- c("None", "BBC", "RMT")
+    write.csv(powerPlot, file = "sparse power rho 0 group3.csv")
+    png("sparse power rho 0 group3.png",
+        width = 1000,
+        height = 618)
+    plot(
+      x = clist,
+      y = unlist(powerPlot$None),
+      "o",
+      pch = 1,
+      ylim = c(0, 1),
+      col = "red",
+      xlab = "value of non-center parameter c, rho = 0",
+      ylab = "Power"
+    )
+    lines(
+      x = clist,
+      y = unlist(powerPlot[, 2]),
+      "o",
+      pch = 2,
+      col = "blue"
+    )
+    lines(
+      x = clist,
+      y = unlist(powerPlot[, 3]),
+      "o",
+      pch = 4,
+      col = "green"
+    )
+    legend(
+      "left",
+      legend = c("None", "BBC", "RMT"),
+      col = c("red", "blue", "green"),
+      lty = 1,
+      pch = c(1, 2, 4),
+      title = "Methods",
+      # text.font = 4,
+      bty = "n"
+    )
+    dev.off()
+  }
+  ### fourth group ----
+  {
+    p = 100
+    RSD = 0.1
+    input_dimension = 500
+    block = 1:200
+    clist <- seq(0.002, 0.008, 0.001)
+    library(MASS)
+    B <- mvrnorm(p,
+                 rep(1, times = input_dimension),
+                 diag(1, nrow = input_dimension))
+    powerPlot <- c()
+    sparseB <-
+      matrix(rbinom(p * input_dimension, 2, 0.1), nrow = p)
+    B <- sparseB * B
+    # Running LLR test for all three corrections for size
+    for (c in clist) {
+      for (correction_methods in c("none", "BBC", "RMT")) {
+        results_for_one_method <- c() # Initialize array for results
+        for (k in 1:testTimes) {
+          # Data preparation
+          DataPreparation(c * B, RSD, rho = 0)
+          # For convenience, we choose the following null
+          B1 <-
+            matrix(rep(0, length(block) * nrow(B)), ncol = length(block))
+          # Run the function
+          results_for_one_method[length(results_for_one_method) + 1] <-
+            GLHT(
+              independent_data,
+              response_data ,
+              alpha = 0.05,
+              block = block,
+              B1 = B1,
+              correction_methods
+            ) / testTimes
+          print(c)
+          print(correction_methods)
+          print(k)
+        }
+        # Name the out put by the correction methods used
+        assign(correction_methods, results_for_one_method)
+        powerPlot[length(powerPlot) + 1] <-
+          sum(get(correction_methods))
+      }
+    }
+    powerPlot <-
+      as.data.frame(matrix(powerPlot, ncol = 3, byrow = TRUE))
+    colnames(powerPlot) <- c("None", "BBC", "RMT")
+    write.csv(powerPlot, file = "sparse power rho 0 group4.csv")
+    png("sparse power rho 0 group4.png",
+        width = 1000,
+        height = 618)
+    plot(
+      x = clist,
+      y = unlist(powerPlot$None),
+      "o",
+      pch = 1,
+      ylim = c(0, 1),
+      col = "red",
+      xlab = "value of non-center parameter c, rho = 0",
+      ylab = "Power"
+    )
+    lines(
+      x = clist,
+      y = unlist(powerPlot[, 2]),
+      "o",
+      pch = 2,
+      col = "blue"
+    )
+    lines(
+      x = clist,
+      y = unlist(powerPlot[, 3]),
+      "o",
+      pch = 4,
+      col = "green"
+    )
+    legend(
+      "left",
+      legend = c("None", "BBC", "RMT"),
+      col = c("red", "blue", "green"),
+      lty = 1,
+      pch = c(1, 2, 4),
+      title = "Methods",
+      # text.font = 4,
+      bty = "n"
+    )
+    dev.off()
+  }
+  
+  
+  
+  
+  
+}
