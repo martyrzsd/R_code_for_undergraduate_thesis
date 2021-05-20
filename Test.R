@@ -1454,9 +1454,8 @@ source("data_generation.R")
   dev.off()
 }
 
-## sparse power test----
-{
-  testTimes <- 100
+# sparse power test----
+  testTimes <- 1000
   ### first group (done) ----
   {
     p = 10
@@ -1545,7 +1544,7 @@ source("data_generation.R")
     )
     dev.off()
   }
-  ### second group ----
+  ### second group (done) ----
   {
     p = 30
     RSD = 0.05
@@ -1639,7 +1638,7 @@ source("data_generation.R")
     RSD = 0.1
     input_dimension = 200
     block = 1:100
-    clist <- seq(0.001, 0.02, 0.001)
+    clist <- seq(0.003, 0.033, 0.003)
     library(MASS)
     B <- mvrnorm(p,
                  rep(1, times = input_dimension),
@@ -1727,7 +1726,7 @@ source("data_generation.R")
     RSD = 0.1
     input_dimension = 500
     block = 1:200
-    clist <- seq(0.002, 0.008, 0.001)
+    clist <- seq(0.001, 0.02, 0.001)
     library(MASS)
     B <- mvrnorm(p,
                  rep(1, times = input_dimension),
@@ -1810,8 +1809,3 @@ source("data_generation.R")
     dev.off()
   }
   
-  
-  
-  
-  
-}
