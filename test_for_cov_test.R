@@ -1,11 +1,11 @@
 # call function
 source("one_sample_covariance_testing.R")
 # Benchmark Function
-{
 BenchMarkCov <-
   function(testTimes = 100,
            dimensionVector = c(2, 10, 50, 100, 200),
-           RSD = 0.05, Sigma=diag(x = 1, nrow = dimensionVector[1])) {
+           RSD = 0.05,
+           Sigma = diag(x = 1, nrow = dimensionVector[1])) {
     library(MASS)
     # one can change test times and dimension of each experiments using the parameters above
     # initialize repeated experiments
@@ -27,7 +27,7 @@ BenchMarkCov <-
         # generating data for null and alter
         Sigma <- diag(x = 1, nrow = p)
         Test_data <-
-          mvrnorm(n, rep(0, times = p), Sigma) 
+          mvrnorm(n, rep(0, times = p), Sigma)
         LRresults[length(LRresults) + 1] <-
           one_sample_cov_test(Test_data, 0.05, "none") / testTimes
         CLRresults[length(CLRresults) + 1] <-
@@ -35,11 +35,11 @@ BenchMarkCov <-
         AlterSigma <-
           diag(c(3, rep(1, times = p - 1)), nrow = p) # Alternative hypothesis
         AlterTest_data <-
-          mvrnorm(n, rep(0, times = p), Sigma) # Generating data under alternative
+          mvrnorm(n, rep(0, times = p), AlterSigma) # Generating data under alternative
         AlterLRresults[length(LRresults) + 1] <-
-          one_sample_cov_test(Test_data, 0.05, "none") / testTimes
+          one_sample_cov_test(AlterTest_data, 0.05, "none") / testTimes
         AlterCLRresults[length(CLRresults) + 1] <-
-          one_sample_cov_test(Test_data, 0.05, "RMT") / testTimes
+          one_sample_cov_test(AlterTest_data, 0.05, "RMT") / testTimes
         print(k)
         print(p)
         #SigmaPara <- diag(x = 1, nrow = p)
@@ -65,9 +65,9 @@ BenchMarkCov <-
     LRresults <- matrix(LRresults, ncol = testTimes, byrow = TRUE)
     CLRresults <- matrix(CLRresults, ncol = testTimes, byrow = TRUE)
     AlterLRresults <-
-      matrix(LRresults, ncol = testTimes, byrow = TRUE)
+      matrix(AlterLRresults, ncol = testTimes, byrow = TRUE)
     AlterCLRresults <-
-      matrix(CLRresults, ncol = testTimes, byrow = TRUE)
+      matrix(AlterCLRresults, ncol = testTimes, byrow = TRUE)
     return(
       list(
         "LR both growth" = apply(LRresults, 1, sum),
@@ -82,44 +82,142 @@ BenchMarkCov <-
 
 
 
-# Benchmark and visualization
-
+## Dimension effects ----
+{
 SampleSize <- 1000
-DimensionArray <- c(2, seq(10,100,10),seq(120,200,20))
-RsdArray <- DimensionArray/SampleSize
-tt <- 10
+DimensionArray <- c(2, seq(10, 100, 10), seq(120, 200, 20))
+RsdArray <- DimensionArray / SampleSize
+tt <- 2000
 
+ResultsDimensionEffectsLR <- c()
+ResultsDimensionEffectsCLR <- c()
+ResultsDimensionEffectsLRPower <- c()
+ResultsDimensionEffectsCLRPower <- c()
 for (i in 1:length(DimensionArray)) {
-  ResultsDimensionEffects <- BenchMarkCov(testTimes = tt, RSD = RsdArray[i], dimensionVector = DimensionArray[i])
+  temp <-
+    BenchMarkCov(testTimes = tt,
+                 RSD = RsdArray[i],
+                 dimensionVector = DimensionArray[i])
+  ResultsDimensionEffectsLR[i] <- temp$'LR both growth'
+  ResultsDimensionEffectsCLR[i] <- temp$'CLR both growth'
+  ResultsDimensionEffectsLRPower[i] <- temp$'LR power'
+  ResultsDimensionEffectsCLRPower[i] <- temp$'CLR power'
 }
-  
-## dimension and sample size both growth ----
-tt <- 5
-ResultsBothGrowth <- BenchMarkCov(testTimes = tt, dimensionVector = DimensionArray)
+ResultsDimensionEffects <-
+  data.frame(
+    LR = ResultsDimensionEffectsLR,
+    CLR = ResultsDimensionEffectsCLR,
+    LRPower = ResultsDimensionEffectsLRPower,
+    CLRPower = ResultsDimensionEffectsCLRPower
+  )
 
-write.csv(ResultsBothGrowth,file = "Covariance testing both growth.csv")
-png(filename = "Covariance testing both growth.png",width = 1000,
+write.csv(ResultsDimensionEffects, file = "Covariance testing dimension effects.csv")
+png(filename = "Covariance_testing_dimension_effects.png",
+    width = 1000,
+    height = 618)
+plot(
+  x = DimensionArray,
+  y = ResultsDimensionEffectsLR,
+  "o",
+  xlab = "dimension p",
+  ylab = "size",
+  pch = 2,
+  col = "red",
+  ylim = c(0, 1)
+)
+lines(x = DimensionArray,
+      y = ResultsDimensionEffectsCLR,
+      "o",
+      col = "blue")
+legend(
+  "left",
+  legend = c("LR", "CLR"),
+  pch = c(2, 1),
+  col = c("red", "blue"),
+  bty = "n"
+)
+dev.off()
+
+png(filename = "Covariance_testing_dimension_effects_power.png",
+    width = 1000,
+    height = 618)
+plot(
+  x = DimensionArray,
+  y = ResultsDimensionEffectsLRPower,
+  "o",
+  xlab = "dimension p",
+  ylab = "power",
+  pch = 2,
+  col = "red",
+  ylim = c(0, 1)
+)
+lines(x = DimensionArray,
+      y = ResultsDimensionEffectsCLRPower,
+      "o",
+      col = "blue")
+legend(
+  "left",
+  legend = c("LR", "CLR"),
+  pch = c(2, 1),
+  col = c("red", "blue"),
+  bty = "n"
+)
+dev.off()
+}
+## dimension and sample size both growth (done) ---- 
+tt <- 2000
+ResultsBothGrowth <-
+  BenchMarkCov(testTimes = tt, dimensionVector = DimensionArray)
+
+write.csv(ResultsBothGrowth, file = "Covariance testing both growth.csv")
+png(filename = "Covariance testing both growth.png",
+    width = 1000,
     height = 618)
 plot(
   x = DimensionArray,
   y = ResultsBothGrowth$`LR both growth`,
   "o",
-  xlab = "dimension and sample size (p,n)",
+  xlab = "dimension p",
   ylab = "size",
   pch = 2,
   col = "red",
-  ylim = c(0,1)
+  ylim = c(0, 1)
 )
 lines(x = DimensionArray,
       y = ResultsBothGrowth$`CLR both growth`,
       "o",
       col = "blue")
-legend("left",
-       legend = c("LR", "CLR"),
-       pch = c(2, 1),
-       col = c("red", "blue"),
-       bty = "n")
+legend(
+  "left",
+  legend = c("LR", "CLR"),
+  pch = c(2, 1),
+  col = c("red", "blue"),
+  bty = "n"
+)
 dev.off()
-}
 
-FinalresultsPara <- BenchMarkCov(testTimes = 2000, Sigma = )
+png(filename = "Covariance_testing_both_growth_power.png",
+    width = 1000,
+    height = 618)
+plot(
+  x = DimensionArray,
+  y = ResultsBothGrowth$`LR power`,
+  "o",
+  xlab = "dimension p",
+  ylab = "power",
+  pch = 2,
+  col = "red",
+  ylim = c(0, 1)
+)
+lines(x = DimensionArray,
+      y = ResultsBothGrowth$`CLR power`,
+      "o",
+      col = "blue")
+legend(
+  "left",
+  legend = c("LR", "CLR"),
+  pch = c(2, 1),
+  col = c("red", "blue"),
+  bty = "n"
+)
+dev.off()
