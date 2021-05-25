@@ -33,12 +33,12 @@ BenchMarkCov <-
         CLRresults[length(CLRresults) + 1] <-
           one_sample_cov_test(Test_data, 0.05, "RMT") / testTimes
         AlterSigma <-
-          diag(c(3, rep(1, times = p - 1)), nrow = p) # Alternative hypothesis
+          diag(c(1, rep(0.02, times = p - 1)), nrow = p) # Alternative hypothesis
         AlterTest_data <-
           mvrnorm(n, rep(0, times = p), AlterSigma) # Generating data under alternative
-        AlterLRresults[length(LRresults) + 1] <-
+        AlterLRresults[length(AlterLRresults) + 1] <-
           one_sample_cov_test(AlterTest_data, 0.05, "none") / testTimes
-        AlterCLRresults[length(CLRresults) + 1] <-
+        AlterCLRresults[length(AlterCLRresults) + 1] <-
           one_sample_cov_test(AlterTest_data, 0.05, "RMT") / testTimes
         print(k)
         print(p)
@@ -71,21 +71,21 @@ BenchMarkCov <-
     return(
       list(
         "LR both growth" = apply(LRresults, 1, sum),
-        "LR power" = 1 - apply(AlterLRresults, 1, sum),
+        "LR power" = apply(AlterLRresults, 1, sum),
         "LR Raw Results" = LRresults,
         "CLR both growth" = apply(CLRresults, 1, sum),
-        "CLR power" = 1 - apply(AlterCLRresults, 1, sum),
+        "CLR power" = apply(AlterCLRresults, 1, sum),
         "CLR Raw Results" = CLRresults
       )
     )
   }
 
 
-
+{
 ## Dimension effects ----
 {
-SampleSize <- 1000
-DimensionArray <- c(2, seq(10, 100, 10), seq(120, 200, 20))
+SampleSize <- 500
+DimensionArray <- c(2, seq(10, 100, 10), seq(120, 300, 30))
 RsdArray <- DimensionArray / SampleSize
 tt <- 2000
 
@@ -165,7 +165,6 @@ legend(
 dev.off()
 }
 ## dimension and sample size both growth (done) ---- 
-tt <- 2000
 ResultsBothGrowth <-
   BenchMarkCov(testTimes = tt, dimensionVector = DimensionArray)
 
@@ -221,3 +220,4 @@ legend(
   bty = "n"
 )
 dev.off()
+}
