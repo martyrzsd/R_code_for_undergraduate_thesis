@@ -1,11 +1,39 @@
 # call function
-source("one_sample_covariance_testing.R")
+one_sample_cov_test <- function(input, alpha, correction_method = "none") {
+  library(MASS)
+  Empirical_Sigma <- cov(input)
+  L <-
+    sum(diag(Empirical_Sigma)) - log(det(Empirical_Sigma)) - ncol(input) #value of log likelihood
+  likelihood_statistics <- nrow(input) * L # value of LR statistic
+  if (correction_method == "none") {
+    threshold <-
+      qchisq(1 - alpha, df = ncol(input) * (ncol(input) + 1) / 2) # compute reject boundary of region
+    if (likelihood_statistics > threshold) {
+      return(1) # Reject
+    }
+    return(0) # Accept
+  }
+  if (correction_method == "RMT") {
+    d <- ncol(input)
+    yn <- d / nrow(input)
+    CLRn <- (L - d * (1 - (1 - 1 / yn) * log(1 - yn)) + log(1 - yn) / 2) / (sqrt(-2 * log(1 - yn) - 2 * yn))# value of CLR statistics
+    UpperThreshold <- qnorm(1 - alpha / 2)
+    LowerThreshold <- qnorm(alpha / 2) # compute two-sided threshold
+    if (CLRn > UpperThreshold || CLRn < LowerThreshold) {
+      return(1) #Reject
+    }
+    return(0) # Accept
+  }
+  
+}
+
+
+
 # Benchmark Function
 BenchMarkCov <-
   function(testTimes = 100,
            dimensionVector = c(2, 10, 50, 100, 200),
-           RSD = 0.05,
-           Sigma = diag(x = 1, nrow = dimensionVector[1])) {
+           RSD = 0.05) {
     library(MASS)
     # one can change test times and dimension of each experiments using the parameters above
     # initialize repeated experiments
@@ -13,11 +41,7 @@ BenchMarkCov <-
     CLRresults <- c()
     AlterLRresults <- c()
     AlterCLRresults <- c()
-    # initialize effects of dimensions
-    LRresultsPara <- c()
-    CLRresultsPara <- c()
-    AlterLRresultsPara <- c()
-    AlterCLRresultsPara <- c()
+
     for (p in dimensionVector) {
       # p: dimension
       n <- ceiling(p / RSD) # compute the rounded sample size
@@ -29,9 +53,10 @@ BenchMarkCov <-
         Test_data <-
           mvrnorm(n, rep(0, times = p), Sigma)
         LRresults[length(LRresults) + 1] <-
-          one_sample_cov_test(Test_data, 0.05, "none") / testTimes
+          one_sample_cov_test(input=Test_data,alpha = 0.05,correction_method =  "none") / testTimes
         CLRresults[length(CLRresults) + 1] <-
-          one_sample_cov_test(Test_data, 0.05, "RMT") / testTimes
+          one_sample_cov_test(input=Test_data,alpha = 0.05, correction_method ="RMT") / testTimes
+        
         AlterSigma <-
           diag(c(1, rep(0.02, times = p - 1)), nrow = p) # Alternative hypothesis
         AlterTest_data <-
@@ -42,24 +67,6 @@ BenchMarkCov <-
           one_sample_cov_test(AlterTest_data, 0.05, "RMT") / testTimes
         print(k)
         print(p)
-        #SigmaPara <- diag(x = 1, nrow = p)
-        ### Lower diagonal
-        #for (i in 1:((ncol(SigmaPara)) - 2)) {
-        #  diag(SigmaPara[-1:-i, (-ncol(SigmaPara) + i - 1):-ncol(SigmaPara)]) <-
-        #    rep(rho ^ (i), times = ncol(SigmaPara) - i)
-        #}
-        ### Corner element
-        #SigmaPara[ncol(SigmaPara), 1] <- rho ^ (ncol(SigmaPara))
-        ### Upper diagonal
-        #SigmaPara <-
-        #  SigmaPara + t(SigmaPara) - diag(diag(SigmaPara))
-        
-        #Test_data_Para <-
-        #  mvrnorm(n, rep(0, times = p), SigmaPara) # Generating data
-        #LRresultsPara[length(LRresultsPara) + 1] <-
-        #  one_sample_cov_test(Test_data_Para, 0.05, "none") / testTimes
-        #CLRresultsPara[length(CLRresultsPara) + 1] <-
-        #  one_sample_cov_test(Test_data_Para, 0.05, "RMT") / testTimes
       }
     }
     LRresults <- matrix(LRresults, ncol = testTimes, byrow = TRUE)
@@ -93,6 +100,7 @@ ResultsDimensionEffectsLR <- c()
 ResultsDimensionEffectsCLR <- c()
 ResultsDimensionEffectsLRPower <- c()
 ResultsDimensionEffectsCLRPower <- c()
+
 for (i in 1:length(DimensionArray)) {
   temp <-
     BenchMarkCov(testTimes = tt,
@@ -164,6 +172,7 @@ legend(
 )
 dev.off()
 }
+  
 ## dimension and sample size both growth (done) ---- 
 ResultsBothGrowth <-
   BenchMarkCov(testTimes = tt, dimensionVector = DimensionArray)

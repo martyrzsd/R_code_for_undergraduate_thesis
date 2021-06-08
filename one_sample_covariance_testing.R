@@ -20,9 +20,8 @@ one_sample_cov_test <- function(input, alpha, correction_method = "none") {
     CLRn <-
       (L - d * (1 - (1 - 1 / yn) * log(1 - yn)) - log(1 - yn) / 2) / (sqrt(-2 *
                                                                              log(1 - yn) - 2 * yn))# value of CLR statistics
-    UpperThreshold <- qnorm(1 - alpha / 2, mean = 0, sd = 1)
-    LowerThreshold <-
-      qnorm(alpha / 2, mean = 0, sd = 1) # compute two-sided threshold
+    UpperThreshold <- qnorm(1 - alpha / 2)
+    LowerThreshold <- qnorm(alpha / 2) # compute two-sided threshold
     if (CLRn > UpperThreshold || CLRn < LowerThreshold) {
       return(1) #Reject
     }
